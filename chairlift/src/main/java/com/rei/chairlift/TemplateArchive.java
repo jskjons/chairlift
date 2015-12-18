@@ -10,17 +10,20 @@ import java.util.Collections;
 import org.eclipse.aether.artifact.Artifact;
 
 public class TemplateArchive {
-    private FileSystem zipFs;
     private Artifact artifact;
+    protected FileSystem fileSystem;
 
-    public TemplateArchive(Artifact artifact) throws IOException {
+    public TemplateArchive(Artifact artifact) {
         this.artifact = artifact;
+    }
+    
+    public void init() throws IOException {
         final URI uri = URI.create("jar:file:" + artifact.getFile().toURI().getPath());
-        zipFs = FileSystems.newFileSystem(uri, Collections.emptyMap());
+        fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
     }
     
     public String read(String path) throws IOException {
-        return new String(Files.readAllBytes(zipFs.getPath(path)));
+        return new String(Files.readAllBytes(fileSystem.getPath(path)));
     }
 
     public String getVersion() {
@@ -42,6 +45,5 @@ public class TemplateArchive {
     public String getExtension() {
         return artifact.getExtension();
     }
-    
     
 }

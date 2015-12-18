@@ -1,11 +1,13 @@
 package com.rei.chairlift;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import groovy.lang.Script;
 
 public class ChairliftConfigScript extends Script {
 
     private TemplateConfig config;
-    private ChairliftConfig globalConfig;
 
     @Override
     public Object run() {
@@ -15,9 +17,43 @@ public class ChairliftConfigScript extends Script {
     public void setConfig(TemplateConfig config) {
         this.config = config;
     }
+    
+    public Map<String, Object> getParams() {
+        return config.getParameterValues();
+    }
+    
+    public Object param(String name, String description, Object defaultValue) {
+        Object value = getParamValue(name, description, defaultValue);
+        config.addParameterInfo(new ParameterInfo(name, description, defaultValue));
+        config.setParameterValue(name, value);
+        return value;
+    }
 
-    public void setGlobalConfig(ChairliftConfig globalConfig) {
-        this.globalConfig = globalConfig;
+    public void includeFiles(String... patterns) {
+        config.getIncludedFiles().addAll(Arrays.asList(patterns));
+    }
+    
+    public void excludeFiles(String... patterns) {
+        config.getExcludedFiles().addAll(Arrays.asList(patterns));
+    }
+    
+    public void processFiles(String... patterns) {
+        config.getProcessedFiles().addAll(Arrays.asList(patterns));
+    }
+    
+    public void passthroughFiles(String... patterns) {
+        config.getUnprocessedFiles().addAll(Arrays.asList(patterns));
+    }
+    
+    private Object getParamValue(String name, String description, Object defaultValue) {
+        if (config.getGlobalConfig().getSuppliedParameters().containsKey(name)) {
+            return config.getGlobalConfig().getSuppliedParameters().get(name);
+        }
+        
+        if (config.getGlobalConfig().isInteractive()) {
+            return System.console().readLine("value for '%s' (%s) [%s]: ", name, description, defaultValue);
+        }
+        return defaultValue;
     }
 
 }

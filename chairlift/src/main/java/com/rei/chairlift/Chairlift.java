@@ -6,12 +6,18 @@ import java.nio.file.Path;
 import org.eclipse.aether.artifact.Artifact;
 
 public class Chairlift {
+    private ChairliftConfig globalConfig;
+
     public Chairlift(ChairliftConfig globalConfig) {
+        this.globalConfig = globalConfig;
     }
     
-    public void generate(Artifact templateArtifact, Path dest) throws IOException {
-        TemplateArchive archive = new TemplateArchive(templateArtifact.getFile().toPath());
-        TemplateConfig.loadFrom(archive);
+    public void generate(Artifact templateArtifact, Path projectDir) throws IOException {
+        TemplateArchive archive = new TemplateArchive(templateArtifact);
+        TemplateConfig config = TemplateConfig.load(archive, globalConfig, projectDir);
+        
+        
+        
     }
 
 }
