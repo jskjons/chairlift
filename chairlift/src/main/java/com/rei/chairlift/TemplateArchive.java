@@ -12,6 +12,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,9 +34,14 @@ public class TemplateArchive {
         fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
     }
 
-    public String read(String path) throws IOException {
+    public Optional<String> read(String path) throws IOException {
         init();
-        return new String(Files.readAllBytes(fileSystem.getPath(path)));
+        Path p = fileSystem.getPath(path);
+        if (Files.exists(p)) {
+            return Optional.of(new String(Files.readAllBytes(p)));
+        }
+        
+        return Optional.empty();
     }
 
     public String getVersion() {

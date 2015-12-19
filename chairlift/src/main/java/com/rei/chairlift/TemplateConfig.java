@@ -7,16 +7,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.groovy.control.CompilerConfiguration;
-import org.codehaus.groovy.control.customizers.ImportCustomizer;
-
-import com.rei.chairlift.util.NamingUtils;
+import com.rei.chairlift.util.GroovyScriptUtils;
 
 import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
 
 public class TemplateConfig {
     public static final String CONFIG_GROOVY = "/config.groovy";
+    public static final String POSTINSTALL_GROOVY_RELATIVE = "postinstall.groovy";
+    public static final String POSTINSTALL_GROOVY = "/" + POSTINSTALL_GROOVY_RELATIVE;
     public static final String DEFAULT_INCLUDES = "**/*";
     public static final String DEFAULT_PROCESSED = "**/*";
 
@@ -77,14 +75,10 @@ public class TemplateConfig {
             throws IOException {
         TemplateConfig config = new TemplateConfig(globalConfig);
         
-        Binding binding = getBinding(archive, globalConfig, projectDir);
+        Binding binding = GroovyScriptUtils.getBinding(archive, globalConfig, projectDir);
         config.parameterValues.putAll(binding.getVariables());
         
-        CompilerConfiguration compilerConfig = getCompilerConfig();
-        GroovyShell shell = new GroovyShell(TemplateConfig.class.getClassLoader(), binding, compilerConfig);
-        ChairliftConfigScript script = (ChairliftConfigScript) shell.parse(archive.read(CONFIG_GROOVY));
-        script.setConfig(config);
-        script.run();
+        GroovyScriptUtils.runScript(config, binding, archive.read(CONFIG_GROOVY).get());
 
         if (config.getIncludedFiles().isEmpty()) {
             config.getIncludedFiles().add(DEFAULT_INCLUDES);
@@ -95,26 +89,5 @@ public class TemplateConfig {
         }        
         
         return config;
-    }
-
-    private static CompilerConfiguration getCompilerConfig() {
-        CompilerConfiguration compilerConfig = new CompilerConfiguration();
-        ImportCustomizer imports = new ImportCustomizer();
-        imports.addStaticStars(NamingUtils.class.getName());
-        compilerConfig.addCompilationCustomizers(imports);
-        compilerConfig.setScriptBaseClass(ChairliftConfigScript.class.getName());
-        return compilerConfig;
-    }
-
-    private static Binding getBinding(TemplateArchive archive, ChairliftConfig globalConfig, Path projectDir) {
-        Binding binding = new Binding();
-        binding.setProperty("globalConfig", globalConfig);
-        binding.setProperty("projectDir", projectDir);
-        
-        binding.setProperty("templateVersion", archive.getVersion());
-        binding.setProperty("templateArtifactId", archive.getArtifactId());
-        binding.setProperty("templateGroupId", archive.getGroupId());
-        binding.setProperty("templateClassifier", archive.getClassifier());
-        return binding;
     }
 }

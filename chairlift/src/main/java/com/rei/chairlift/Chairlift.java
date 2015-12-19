@@ -2,6 +2,7 @@ package com.rei.chairlift;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -13,6 +14,7 @@ import org.codehaus.groovy.control.CompilationFailedException;
 import org.eclipse.aether.artifact.Artifact;
 
 import com.rei.chairlift.util.AntPathMatcher;
+import com.rei.chairlift.util.GroovyScriptUtils;
 
 import groovy.text.SimpleTemplateEngine;
 
@@ -20,7 +22,8 @@ public class Chairlift {
     private ChairliftConfig globalConfig;
     private static final SimpleTemplateEngine TEMPLATE_ENGINE = new SimpleTemplateEngine();
     private static final Predicate<Path> NEVER_COPY = p -> {
-        return !p.toString().equals(TemplateConfig.CONFIG_GROOVY);
+        return !p.toString().equals(TemplateConfig.CONFIG_GROOVY) && 
+               !p.toString().equals(TemplateConfig.POSTINSTALL_GROOVY);
     };
     
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
@@ -29,7 +32,7 @@ public class Chairlift {
         this.globalConfig = globalConfig;
     }
     
-    public void generate(Artifact templateArtifact, Path projectDir) throws IOException {
+    public String generate(Artifact templateArtifact, Path projectDir) throws IOException {
         TemplateArchive archive = new TemplateArchive(templateArtifact);
         TemplateConfig config = TemplateConfig.load(archive, globalConfig, projectDir);
         archive.unpackTo(projectDir, getCopyFilters(config), 
@@ -37,7 +40,13 @@ public class Chairlift {
                                      getRenameTransformer(config), 
                                      getTemplateProcessor(config));
         
+        runPostInstallScript(projectDir, archive, config);
         
+        Path readme = projectDir.resolve("README.md");
+        if (Files.exists(readme)) {
+            return new String(Files.readAllBytes(readme));
+        }
+        return "No readme assoicated with project!";
     }
 
     List<Predicate<Path>> getCopyFilters(TemplateConfig config) {
@@ -68,6 +77,18 @@ public class Chairlift {
             }
         };
     }
+    
+    private void runPostInstallScript(Path projectDir, TemplateArchive archive, TemplateConfig config) throws IOException {
+        archive.read(TemplateConfig.POSTINSTALL_GROOVY).ifPresent(scriptText -> {
+            try {
+                GroovyScriptUtils.runScript(config, 
+                                            GroovyScriptUtils.getBinding(archive, globalConfig, projectDir), 
+                                            scriptText);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 
     private Predicate<Path> anyMatch(List<String> patterns) {
         return path -> patterns.stream().anyMatch(pattern -> {
@@ -82,5 +103,5 @@ public class Chairlift {
         }
         return sanitized;
     }
-    
+
 }

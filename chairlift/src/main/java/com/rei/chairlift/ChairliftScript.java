@@ -7,7 +7,7 @@ import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
 
 import groovy.lang.Script;
 
-public class ChairliftConfigScript extends Script {
+public class ChairliftScript extends Script {
 
     private TemplateConfig config;
 
