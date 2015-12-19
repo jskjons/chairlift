@@ -1,5 +1,7 @@
 package com.rei.chairlift;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -19,6 +21,7 @@ import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 
 public class TemplateArchive {
+    
     private Artifact artifact;
     protected FileSystem fileSystem;
 
@@ -42,6 +45,14 @@ public class TemplateArchive {
         }
         
         return Optional.empty();
+    }
+    
+    public List<String> list(String prefix) throws IOException {
+        init();
+        return Files.list(fileSystem.getPath("/"))
+                    .map(p -> p.getFileName().toString())
+                    .filter(n -> n.startsWith(prefix))
+                    .collect(toList());
     }
 
     public String getVersion() {

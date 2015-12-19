@@ -3,15 +3,19 @@ package com.rei.chairlift;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.rei.chairlift.util.GroovyScriptUtils;
 
 import groovy.lang.Binding;
 
 public class TemplateConfig {
+    public static final String SUBTEMPLATE_PREFIX = "/subtemplate-";
     public static final String CONFIG_GROOVY = "/config.groovy";
     public static final String POSTINSTALL_GROOVY_RELATIVE = "postinstall.groovy";
     public static final String POSTINSTALL_GROOVY = "/" + POSTINSTALL_GROOVY_RELATIVE;
@@ -28,6 +32,8 @@ public class TemplateConfig {
     
     private List<String> processedFiles = new ArrayList<>();
     private List<String> unprocessedFiles = new ArrayList<>();
+    
+    private List<String> subtemplates = new ArrayList<>();
     
     public TemplateConfig(ChairliftConfig globalConfig) {
         this.globalConfig = globalConfig;
@@ -70,10 +76,16 @@ public class TemplateConfig {
         parameterValues.put(name, value);
     }
     
+    public List<String> getSubtemplates() {
+        return Collections.unmodifiableList(subtemplates);
+    }
+    
     @SuppressWarnings("unchecked")
     public static TemplateConfig load(TemplateArchive archive, ChairliftConfig globalConfig, Path projectDir)
             throws IOException {
         TemplateConfig config = new TemplateConfig(globalConfig);
+        
+        archive.list(SUBTEMPLATE_PREFIX).stream().map(n -> StringUtils.substringAfter(n, "-")).forEach(config.subtemplates::add);
         
         Binding binding = GroovyScriptUtils.getBinding(archive, globalConfig, projectDir);
         config.parameterValues.putAll(binding.getVariables());
