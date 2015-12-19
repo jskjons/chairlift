@@ -3,16 +3,13 @@ package com.rei.chairlift;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
 import groovy.lang.Script;
 
 public class ChairliftConfigScript extends Script {
 
     private TemplateConfig config;
-
-    @Override
-    public Object run() {
-        throw new UnsupportedOperationException("not meant to be used directly, use as a base script only!");
-    }
 
     public void setConfig(TemplateConfig config) {
         this.config = config;
@@ -47,7 +44,8 @@ public class ChairliftConfigScript extends Script {
     
     private Object getParamValue(String name, String description, Object defaultValue) {
         if (config.getGlobalConfig().getSuppliedParameters().containsKey(name)) {
-            return config.getGlobalConfig().getSuppliedParameters().get(name);
+            return DefaultTypeTransformation.castToType(config.getGlobalConfig().getSuppliedParameters().get(name), 
+                                                        defaultValue.getClass());
         }
         
         if (config.getGlobalConfig().isInteractive()) {
@@ -56,4 +54,8 @@ public class ChairliftConfigScript extends Script {
         return defaultValue;
     }
 
+    @Override
+    public Object run() {
+        throw new UnsupportedOperationException("not meant to be used directly, use as a base script only!");
+    }
 }

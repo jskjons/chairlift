@@ -10,5 +10,5 @@ if (params.includeFoo) {
     excludeFiles '**/Foo.java'
 }
 
-processFiles '**/*.java', '**/*.xml'
+processFiles '**/*.java', '**/*.xml', '**/*.md'
 passthroughFiles '**/*.jpg'

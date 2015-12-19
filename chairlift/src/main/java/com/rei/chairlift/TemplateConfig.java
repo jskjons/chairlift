@@ -72,10 +72,41 @@ public class TemplateConfig {
         parameterValues.put(name, value);
     }
     
+    @SuppressWarnings("unchecked")
     public static TemplateConfig load(TemplateArchive archive, ChairliftConfig globalConfig, Path projectDir)
             throws IOException {
         TemplateConfig config = new TemplateConfig(globalConfig);
         
+        Binding binding = getBinding(archive, globalConfig, projectDir);
+        config.parameterValues.putAll(binding.getVariables());
+        
+        CompilerConfiguration compilerConfig = getCompilerConfig();
+        GroovyShell shell = new GroovyShell(TemplateConfig.class.getClassLoader(), binding, compilerConfig);
+        ChairliftConfigScript script = (ChairliftConfigScript) shell.parse(archive.read(CONFIG_GROOVY));
+        script.setConfig(config);
+        script.run();
+
+        if (config.getIncludedFiles().isEmpty()) {
+            config.getIncludedFiles().add(DEFAULT_INCLUDES);
+        }
+        
+        if (config.getProcessedFiles().isEmpty()) {
+            config.getProcessedFiles().add(DEFAULT_PROCESSED);
+        }        
+        
+        return config;
+    }
+
+    private static CompilerConfiguration getCompilerConfig() {
+        CompilerConfiguration compilerConfig = new CompilerConfiguration();
+        ImportCustomizer imports = new ImportCustomizer();
+        imports.addStaticStars(NamingUtils.class.getName());
+        compilerConfig.addCompilationCustomizers(imports);
+        compilerConfig.setScriptBaseClass(ChairliftConfigScript.class.getName());
+        return compilerConfig;
+    }
+
+    private static Binding getBinding(TemplateArchive archive, ChairliftConfig globalConfig, Path projectDir) {
         Binding binding = new Binding();
         binding.setProperty("globalConfig", globalConfig);
         binding.setProperty("projectDir", projectDir);
@@ -84,18 +115,6 @@ public class TemplateConfig {
         binding.setProperty("templateArtifactId", archive.getArtifactId());
         binding.setProperty("templateGroupId", archive.getGroupId());
         binding.setProperty("templateClassifier", archive.getClassifier());
-
-        
-        CompilerConfiguration compilerConfig = new CompilerConfiguration();
-        ImportCustomizer imports = new ImportCustomizer();
-        imports.addStaticStars(NamingUtils.class.getName());
-        compilerConfig.addCompilationCustomizers(imports);
-        compilerConfig.setScriptBaseClass(ChairliftConfigScript.class.getName());
-        GroovyShell shell = new GroovyShell(TemplateConfig.class.getClassLoader(), compilerConfig);
-        ChairliftConfigScript script = (ChairliftConfigScript) shell.parse(archive.read(CONFIG_GROOVY));
-        script.setConfig(config);
-        script.run();
-
-        return config;
+        return binding;
     }
 }
