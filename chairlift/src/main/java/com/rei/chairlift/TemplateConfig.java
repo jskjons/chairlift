@@ -8,17 +8,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.rei.chairlift.util.GroovyScriptUtils;
 
 import groovy.lang.Binding;
 
 public class TemplateConfig {
-    public static final String SUBTEMPLATE_PREFIX = "/subtemplate-";
-    public static final String CONFIG_GROOVY = "/config.groovy";
-    public static final String POSTINSTALL_GROOVY_RELATIVE = "postinstall.groovy";
-    public static final String POSTINSTALL_GROOVY = "/" + POSTINSTALL_GROOVY_RELATIVE;
+    public static final String SUBTEMPLATE_FOLDER = "/subtemplates/";
+    public static final String CONFIG_GROOVY = "config.groovy";
+    public static final String POSTINSTALL_GROOVY = "postinstall.groovy";
     public static final String DEFAULT_INCLUDES = "**/*";
     public static final String DEFAULT_PROCESSED = "**/*";
 
@@ -81,16 +78,19 @@ public class TemplateConfig {
     }
     
     @SuppressWarnings("unchecked")
-    public static TemplateConfig load(TemplateArchive archive, ChairliftConfig globalConfig, Path projectDir)
+    public static TemplateConfig load(TemplateArchive archive, String subtemplate, ChairliftConfig globalConfig, Path projectDir)
             throws IOException {
         TemplateConfig config = new TemplateConfig(globalConfig);
         
-        archive.list(SUBTEMPLATE_PREFIX).stream().map(n -> StringUtils.substringAfter(n, "-")).forEach(config.subtemplates::add);
+        if (subtemplate != null && !archive.exists(SUBTEMPLATE_FOLDER + subtemplate)) {
+            throw new IllegalArgumentException("no subtemplate with name " + subtemplate);
+        }
         
         Binding binding = GroovyScriptUtils.getBinding(archive, globalConfig, projectDir);
         config.parameterValues.putAll(binding.getVariables());
         
-        GroovyScriptUtils.runScript(config, binding, archive.read(CONFIG_GROOVY).get());
+        String configFile = subtemplate != null ? SUBTEMPLATE_FOLDER + subtemplate + "/" + CONFIG_GROOVY : "/" + CONFIG_GROOVY;
+        GroovyScriptUtils.runScript(config, binding, archive.read(configFile).get());
 
         if (config.getIncludedFiles().isEmpty()) {
             config.getIncludedFiles().add(DEFAULT_INCLUDES);

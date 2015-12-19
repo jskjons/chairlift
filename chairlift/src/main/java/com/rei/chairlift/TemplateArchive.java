@@ -47,11 +47,19 @@ public class TemplateArchive {
         return Optional.empty();
     }
     
-    public List<String> list(String prefix) throws IOException {
+    public boolean exists(String path) throws IOException {
         init();
-        return Files.list(fileSystem.getPath("/"))
+        return Files.exists(fileSystem.getPath(path));
+    }
+    
+    public List<String> list(String folder) throws IOException {
+        init();
+        Path path = fileSystem.getPath(folder);
+        if (!Files.exists(path)) {
+            return Collections.emptyList();
+        }
+        return Files.list(path)
                     .map(p -> p.getFileName().toString())
-                    .filter(n -> n.startsWith(prefix))
                     .collect(toList());
     }
 
@@ -75,7 +83,7 @@ public class TemplateArchive {
         return artifact.getExtension();
     }
 
-    public void unpackTo(Path projectDir, 
+    public void unpackTo(String base, Path projectDir, 
                          List<Predicate<Path>> copyFilters, 
                          List<Predicate<Path>> processingFilters, 
                          Function<Path, Path> filenameTransformer, 
@@ -86,17 +94,18 @@ public class TemplateArchive {
             Files.createDirectories(projectDir);
         }
 
-        final Path root = fileSystem.getPath("/");
+        final Path root = fileSystem.getPath(base);
 
         // walk the zip file tree and copy files to the destination
         Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (allMatch(copyFilters, file)) {
+                if (allMatch(copyFilters, root.relativize(file))) {
                     String content = new String(Files.readAllBytes(file));
                     content = allMatch(processingFilters, file) ? contentTransformer.apply(content) : content;
                     
-                    final Path dest = filenameTransformer.apply(projectDir.resolve(file.toString().substring(1)));
+                    Path rawDest = projectDir.resolve(stringLeadingSlash(root.relativize(file).toString()));
+                    final Path dest = filenameTransformer.apply(rawDest);
                     Files.write(dest, content.getBytes());
                 }
                 
@@ -109,11 +118,16 @@ public class TemplateArchive {
 
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                Path dest = Paths.get(projectDir.toString(), dir.toString());
-                Files.createDirectories(filenameTransformer.apply(dest));
+                Path rawDest = Paths.get(projectDir.toString(), root.relativize(dir).toString());
+                Path dest = filenameTransformer.apply(rawDest);
+                Files.createDirectories(dest);
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+    
+    private static String stringLeadingSlash(String in) {
+        return in.startsWith("/") || in.startsWith("\\") ? in.substring(1) : in;
     }
 
 }

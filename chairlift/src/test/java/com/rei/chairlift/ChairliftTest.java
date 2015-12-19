@@ -19,10 +19,11 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableMap;
 
 public class ChairliftTest extends BaseTemplateTest {
+    ChairliftConfig globalConfig = new ChairliftConfig(false, ImmutableMap.of());
+    Chairlift chairlift = new Chairlift(globalConfig);
+    
     @Test
     public void testFilters() {
-        ChairliftConfig globalConfig = new ChairliftConfig(false, ImmutableMap.of());
-        Chairlift chairlift = new Chairlift(globalConfig);
         TemplateConfig config = new TemplateConfig(globalConfig);
         config.getIncludedFiles().add("**/*");
         config.getExcludedFiles().add("**/exclude");
@@ -34,9 +35,6 @@ public class ChairliftTest extends BaseTemplateTest {
     
     @Test
     public void canGenerateProject() throws Exception {
-        ChairliftConfig globalConfig = new ChairliftConfig(false, ImmutableMap.of());
-        
-        Chairlift chairlift = new Chairlift(globalConfig);
         Path projectFolder = tmp.newFolder("project").toPath();
         
         String readme = chairlift.generate(getTestTemplateArtifact("simple-template"), projectFolder);
@@ -48,6 +46,18 @@ public class ChairliftTest extends BaseTemplateTest {
         
         assertTrue(Files.exists(projectFolder.resolve("my-app/MyApp.java")));
         assertTrue(Files.exists(projectFolder.resolve("generated-afterwards")));        
+    }
+    
+    @Test
+    public void canGenerateSubTemplate() throws Exception {
+        Path projectFolder = tmp.newFolder("project").toPath();
+        
+        chairlift.generate(getTestTemplateArtifact("template-with-subs"), "entity", projectFolder);
+        
+        printDir(projectFolder);
+        
+        assertTrue(Files.exists(projectFolder.resolve("com/rei/test/domain/Entity.java")));
+        assertTrue(Files.exists(projectFolder.resolve("com/rei/test/persistence/EntityRepository.java")));
     }
     
     private void printDir(Path dir) throws IOException {

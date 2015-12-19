@@ -22,8 +22,9 @@ public class Chairlift {
     private ChairliftConfig globalConfig;
     private static final SimpleTemplateEngine TEMPLATE_ENGINE = new SimpleTemplateEngine();
     private static final Predicate<Path> NEVER_COPY = p -> {
-        return !p.toString().equals(TemplateConfig.CONFIG_GROOVY) && 
-               !p.toString().equals(TemplateConfig.POSTINSTALL_GROOVY);
+        return !p.getFileName().toString().equals(TemplateConfig.CONFIG_GROOVY) && 
+               !p.getFileName().toString().equals(TemplateConfig.POSTINSTALL_GROOVY) &&
+               !p.toString().startsWith(TemplateConfig.SUBTEMPLATE_FOLDER);
     };
     
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
@@ -32,15 +33,22 @@ public class Chairlift {
         this.globalConfig = globalConfig;
     }
     
-    public String generate(Artifact templateArtifact, Path projectDir) throws IOException {
-        TemplateArchive archive = new TemplateArchive(templateArtifact);
-        TemplateConfig config = TemplateConfig.load(archive, globalConfig, projectDir);
-        archive.unpackTo(projectDir, getCopyFilters(config), 
-                                     getProcessFilters(config), 
-                                     getRenameTransformer(config), 
-                                     getTemplateProcessor(config));
         
-        runPostInstallScript(projectDir, archive, config);
+    public String generate(Artifact templateArtifact, Path projectDir) throws IOException {
+        return generate(templateArtifact, null, projectDir);
+    }
+    
+    public String generate(Artifact templateArtifact, String subtemplate, Path projectDir) throws IOException {
+        TemplateArchive archive = new TemplateArchive(templateArtifact);
+        TemplateConfig config = TemplateConfig.load(archive, subtemplate, globalConfig, projectDir);
+        
+        String root = subtemplate == null ? "/" : TemplateConfig.SUBTEMPLATE_FOLDER + "/" + subtemplate;
+        archive.unpackTo(root, projectDir, getCopyFilters(config), 
+                                           getProcessFilters(config), 
+                                           getRenameTransformer(config), 
+                                           getTemplateProcessor(config));
+        
+        runPostInstallScript(projectDir, root, archive, config);
         
         Path readme = projectDir.resolve("README.md");
         if (Files.exists(readme)) {
@@ -78,8 +86,8 @@ public class Chairlift {
         };
     }
     
-    private void runPostInstallScript(Path projectDir, TemplateArchive archive, TemplateConfig config) throws IOException {
-        archive.read(TemplateConfig.POSTINSTALL_GROOVY).ifPresent(scriptText -> {
+    private void runPostInstallScript(Path projectDir, String root, TemplateArchive archive, TemplateConfig config) throws IOException {
+        archive.read(root + TemplateConfig.POSTINSTALL_GROOVY).ifPresent(scriptText -> {
             try {
                 GroovyScriptUtils.runScript(config, 
                                             GroovyScriptUtils.getBinding(archive, globalConfig, projectDir), 
