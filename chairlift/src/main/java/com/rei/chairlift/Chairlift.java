@@ -31,7 +31,7 @@ public class Chairlift {
         return !filename.equals(TemplateConfig.CONFIG_GROOVY) && 
                !filename.equals(TemplateConfig.POSTINSTALL_GROOVY) &&
                !filename.endsWith(".class") &&
-               !p.toString().startsWith(TemplateConfig.SUBTEMPLATE_PREFIX);
+               !filename.endsWith(".retain");
     };
     
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
@@ -93,7 +93,7 @@ public class Chairlift {
     }
     
     private void runPostInstallScript(Path projectDir, String root, TemplateArchive archive, TemplateConfig config) throws IOException {
-        archive.read(root + TemplateConfig.POSTINSTALL_GROOVY).ifPresent(scriptText -> {
+        archive.read(root + "/" + TemplateConfig.POSTINSTALL_GROOVY).ifPresent(scriptText -> {
             try {
                 logger.info("running {}", TemplateConfig.POSTINSTALL_GROOVY);
                 GroovyScriptUtils.runScript(config, 
