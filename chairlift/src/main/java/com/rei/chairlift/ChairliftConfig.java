@@ -6,12 +6,14 @@ import java.util.Map;
 public class ChairliftConfig {
     private boolean interactive;
     private Map<String, String> suppliedParameters = new HashMap<>();
+    private boolean resolveDependencies;
     
     public ChairliftConfig() {
     }
     
-    public ChairliftConfig(boolean interactive, Map<String, String> suppliedParameters) {
+    public ChairliftConfig(boolean interactive, boolean resolveDependencies, Map<String, String> suppliedParameters) {
         this.interactive = interactive;
+        this.resolveDependencies = resolveDependencies;
         this.suppliedParameters = suppliedParameters;
     }
 
@@ -29,5 +31,13 @@ public class ChairliftConfig {
 
     public void setSuppliedParameters(Map<String, String> suppliedParameters) {
         this.suppliedParameters = suppliedParameters;
+    }
+
+    public boolean isResolveDependencies() {
+        return resolveDependencies;
+    }
+
+    public void setResolveDependencies(boolean resolveDependencies) {
+        this.resolveDependencies = resolveDependencies;
     }
 }

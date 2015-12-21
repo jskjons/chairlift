@@ -3,7 +3,9 @@ package com.rei.chairlift;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -22,16 +24,22 @@ import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TemplateArchive {
+public class TemplateArchive implements AutoCloseable {
     
     private static final Logger logger = LoggerFactory.getLogger(TemplateArchive.class);
     
     private Artifact artifact;
     protected FileSystem fileSystem;
+    private final List<URL> classpath;
 
     public TemplateArchive(Artifact artifact) {
-        this.artifact = artifact;
+        this(artifact, null);
     }
+    
+    public TemplateArchive(Artifact artifact, List<URL> classpath) {
+        this.artifact = artifact;
+        this.classpath = classpath;
+    }    
 
     public void init() throws IOException {
         if (fileSystem != null) {
@@ -87,6 +95,10 @@ public class TemplateArchive {
         return artifact.getExtension();
     }
 
+    public List<URL> getClasspath() {
+        return this.classpath;
+    }
+    
     public void unpackTo(String base, Path projectDir, 
                          List<Predicate<Path>> copyFilters, 
                          List<Predicate<Path>> processingFilters, 
@@ -105,16 +117,24 @@ public class TemplateArchive {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (allMatch(copyFilters, root.relativize(file))) {
-                    String content = new String(Files.readAllBytes(file));
-                    content = allMatch(processingFilters, file) ? contentTransformer.apply(content) : content;
+                    byte[] content = Files.readAllBytes(file);
+                    try {
+                        content = allMatch(processingFilters, file) ? transform(contentTransformer, content) : content;
+                    } catch (TemplatingException e) {
+                        throw new RuntimeException("error parsing template " + file + ": " + e.getCause().getMessage(), e);
+                    }
                     
                     Path rawDest = projectDir.resolve(stringLeadingSlash(root.relativize(file).toString()));
                     final Path dest = filenameTransformer.apply(rawDest);
-                    logger.info("creating file {}", dest);
-                    Files.write(dest, content.getBytes());
+                    logger.info("creating {} in {}", projectDir.relativize(dest), projectDir);
+                    Files.write(dest, content);
                 }
                 
                 return FileVisitResult.CONTINUE;
+            }
+
+            private byte[] transform(Function<String, String> contentTransformer, byte[] content) {
+                return contentTransformer.apply(new String(content)).getBytes();
             }
 
             private boolean allMatch(List<Predicate<Path>> copyFilters, Path file) {
@@ -129,6 +149,15 @@ public class TemplateArchive {
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    @Override
+    public void close() {
+        try {
+            fileSystem.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
     
     private static String stringLeadingSlash(String in) {

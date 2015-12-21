@@ -6,4 +6,12 @@
     <version>${revision}</version>
   </parent>
   <artifactId>chairlift-template</artifactId>
+  
+  <dependencies>
+  	<dependency>
+  		<groupId>${project.parent.groupId}</groupId>
+  		<artifactId>chairlift-testing</artifactId>
+  		<version>${project.parent.version}</version>
+  	</dependency>
+  </dependencies>
 </project>

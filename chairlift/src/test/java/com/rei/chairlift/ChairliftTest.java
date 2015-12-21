@@ -19,7 +19,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableMap;
 
 public class ChairliftTest extends BaseTemplateTest {
-    ChairliftConfig globalConfig = new ChairliftConfig(false, ImmutableMap.of());
+    ChairliftConfig globalConfig = new ChairliftConfig(false, false, ImmutableMap.of());
     Chairlift chairlift = new Chairlift(globalConfig);
     
     @Test

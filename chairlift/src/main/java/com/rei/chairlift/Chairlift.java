@@ -1,27 +1,35 @@
 package com.rei.chairlift;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.codehaus.groovy.control.CompilationFailedException;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.rei.chairlift.util.AntPathMatcher;
 import com.rei.chairlift.util.GroovyScriptUtils;
 
+import groovy.lang.GroovyRuntimeException;
 import groovy.text.SimpleTemplateEngine;
 
 public class Chairlift {
     
+    private static final String TEMPLATE_ERROR_MESSAGE = "error processing template!";
+
     private static final Logger logger = LoggerFactory.getLogger(Chairlift.class);
     
     private ChairliftConfig globalConfig;
@@ -36,31 +44,43 @@ public class Chairlift {
     
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
+    private DependencyResolver dependencyResolver = new DependencyResolver();
+    
     public Chairlift(ChairliftConfig globalConfig) {
         this.globalConfig = globalConfig;
     }
     
-        
+    public String generate(String gavSpec, Path projectDir) throws IOException, ArtifactResolutionException {
+        return generate(gavSpec, null, projectDir);
+    }
+    
+    public String generate(String gavSpec, String subtemplate, Path projectDir) throws IOException, ArtifactResolutionException {
+        return generate(dependencyResolver.resolveSingleArtifact(gavSpec), subtemplate, projectDir);
+    }
+    
     public String generate(Artifact templateArtifact, Path projectDir) throws IOException {
         return generate(templateArtifact, null, projectDir);
     }
     
     public String generate(Artifact templateArtifact, String subtemplate, Path projectDir) throws IOException {
-        TemplateArchive archive = new TemplateArchive(templateArtifact);
-        TemplateConfig config = TemplateConfig.load(archive, subtemplate, globalConfig, projectDir);
+        List<URL> classpath = resolveClasspath(templateArtifact);
         
-        archive.unpackTo(config.getBasePath(), projectDir, getCopyFilters(config), 
-                                                           getProcessFilters(config), 
-                                                           getRenameTransformer(config), 
-                                                           getTemplateProcessor(config));
-        
-        runPostInstallScript(projectDir, config.getBasePath(), archive, config);
-        
-        Path readme = projectDir.resolve("README.md");
-        if (Files.exists(readme)) {
-            return new String(Files.readAllBytes(readme));
+        try (TemplateArchive archive = new TemplateArchive(templateArtifact, classpath)) {
+            TemplateConfig config = TemplateConfig.load(archive, subtemplate, globalConfig, projectDir);
+            
+            archive.unpackTo(config.getBasePath(), projectDir, getCopyFilters(config), 
+                    getProcessFilters(config), 
+                    getRenameTransformer(config), 
+                    getTemplateProcessor(config));
+            
+            runPostInstallScript(projectDir, config.getBasePath(), archive, config);
+            
+            Path readme = projectDir.resolve("README.md");
+            if (Files.exists(readme)) {
+                return new String(Files.readAllBytes(readme));
+            }
+            return "No readme assoicated with project!";
         }
-        return "No readme assoicated with project!";
     }
 
     List<Predicate<Path>> getCopyFilters(TemplateConfig config) {
@@ -86,8 +106,8 @@ public class Chairlift {
                                       .make(config.getParameterValues())
                                       .writeTo(new StringWriter())
                                       .toString();
-            } catch (CompilationFailedException | ClassNotFoundException | IOException e) {
-                throw new RuntimeException("error processing template!", e);
+            } catch (ClassNotFoundException | IOException | GroovyRuntimeException e) {
+                throw new TemplatingException(TEMPLATE_ERROR_MESSAGE, e);
             }
         };
     }
@@ -119,4 +139,17 @@ public class Chairlift {
         return sanitized;
     }
 
+    private List<URL> resolveClasspath(Artifact artifact) {
+        if (!globalConfig.isResolveDependencies()) {
+            return Collections.emptyList();
+        }
+        
+        return dependencyResolver.resolveDependencies(artifact).stream().map(a -> {
+            try {
+                return a.getFile().toURI().toURL();
+            } catch (MalformedURLException e) {
+                throw new IllegalStateException(e);
+            }
+        }).collect(toList());
+    }
 }

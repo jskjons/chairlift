@@ -98,7 +98,12 @@ public class TemplateConfig {
         Binding binding = GroovyScriptUtils.getBinding(archive, globalConfig, projectDir);
         config.parameterValues.putAll(binding.getVariables());
         
-        GroovyScriptUtils.runScript(config, binding, archive.read(basePath + "/" + CONFIG_GROOVY).get());
+        String configPath = basePath + "/" + CONFIG_GROOVY;
+        try {
+            GroovyScriptUtils.runScript(config, binding, archive.read(configPath).get());
+        } catch (Exception e) {
+            throw new RuntimeException("error while running " + configPath, e);
+        }
 
         if (config.getIncludedFiles().isEmpty()) {
             config.getIncludedFiles().add(DEFAULT_INCLUDES);
