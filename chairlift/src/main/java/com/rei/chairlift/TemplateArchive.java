@@ -19,9 +19,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.aether.artifact.Artifact;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TemplateArchive {
     
+    private static final Logger logger = LoggerFactory.getLogger(TemplateArchive.class);
+
     private Artifact artifact;
     protected FileSystem fileSystem;
 
@@ -106,6 +110,7 @@ public class TemplateArchive {
                     
                     Path rawDest = projectDir.resolve(stringLeadingSlash(root.relativize(file).toString()));
                     final Path dest = filenameTransformer.apply(rawDest);
+                    logger.info("creating file {}", dest);
                     Files.write(dest, content.getBytes());
                 }
                 

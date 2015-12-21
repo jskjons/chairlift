@@ -21,6 +21,8 @@
 
 	<modules>
 		<module>chairlift</module>
+		<module>chairlift-template</module>
+		<module>chairlift-testing</module>
 	</modules>
 
 	<dependencies>

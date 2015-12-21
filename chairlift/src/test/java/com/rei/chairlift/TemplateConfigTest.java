@@ -16,7 +16,7 @@ public class TemplateConfigTest extends BaseTemplateTest {
         TemplateArchive archive = getTestTemplate("simple-template");
         ChairliftConfig globalConfig = new ChairliftConfig(false, ImmutableMap.of("global", "true", "includeFoo", "true"));
         
-        TemplateConfig config = TemplateConfig.load(archive, globalConfig, tmp.getRoot().toPath());
+        TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmp.getRoot().toPath());
         Map<String, Object> params = config.getParameterValues();
         System.out.println(params);
         assertEquals(11, params.size());

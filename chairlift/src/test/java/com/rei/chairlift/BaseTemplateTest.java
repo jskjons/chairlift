@@ -10,6 +10,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
+import com.rei.chairlift.util.ZipUtils;
+
 public class BaseTemplateTest {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();

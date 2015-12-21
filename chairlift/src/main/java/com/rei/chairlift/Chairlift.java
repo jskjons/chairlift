@@ -12,6 +12,8 @@ import java.util.function.Predicate;
 
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.eclipse.aether.artifact.Artifact;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.rei.chairlift.util.AntPathMatcher;
 import com.rei.chairlift.util.GroovyScriptUtils;
@@ -19,11 +21,16 @@ import com.rei.chairlift.util.GroovyScriptUtils;
 import groovy.text.SimpleTemplateEngine;
 
 public class Chairlift {
+    
+    private static final Logger logger = LoggerFactory.getLogger(Chairlift.class);
+    
     private ChairliftConfig globalConfig;
     private static final SimpleTemplateEngine TEMPLATE_ENGINE = new SimpleTemplateEngine();
     private static final Predicate<Path> NEVER_COPY = p -> {
-        return !p.getFileName().toString().equals(TemplateConfig.CONFIG_GROOVY) && 
-               !p.getFileName().toString().equals(TemplateConfig.POSTINSTALL_GROOVY) &&
+        String filename = p.getFileName().toString();
+        return !filename.equals(TemplateConfig.CONFIG_GROOVY) && 
+               !filename.equals(TemplateConfig.POSTINSTALL_GROOVY) &&
+               !filename.endsWith(".class") &&
                !p.toString().startsWith(TemplateConfig.SUBTEMPLATE_FOLDER);
     };
     
@@ -43,6 +50,7 @@ public class Chairlift {
         TemplateConfig config = TemplateConfig.load(archive, subtemplate, globalConfig, projectDir);
         
         String root = subtemplate == null ? "/" : TemplateConfig.SUBTEMPLATE_FOLDER + "/" + subtemplate;
+        
         archive.unpackTo(root, projectDir, getCopyFilters(config), 
                                            getProcessFilters(config), 
                                            getRenameTransformer(config), 
@@ -89,6 +97,7 @@ public class Chairlift {
     private void runPostInstallScript(Path projectDir, String root, TemplateArchive archive, TemplateConfig config) throws IOException {
         archive.read(root + TemplateConfig.POSTINSTALL_GROOVY).ifPresent(scriptText -> {
             try {
+                logger.info("running {}", TemplateConfig.POSTINSTALL_GROOVY);
                 GroovyScriptUtils.runScript(config, 
                                             GroovyScriptUtils.getBinding(archive, globalConfig, projectDir), 
                                             scriptText);

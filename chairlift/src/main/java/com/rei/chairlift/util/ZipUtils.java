@@ -1,4 +1,4 @@
-package com.rei.chairlift;
+package com.rei.chairlift.util;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,7 +27,7 @@ public class ZipUtils {
     }
 
     /**
-     * Creates/updates a zip file.
+     * Creates a zip file from the directory
      * 
      * @param dir directory to zip
      * @param dest destination zip file
