@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public class TemplateArchive {
     
     private static final Logger logger = LoggerFactory.getLogger(TemplateArchive.class);
-
+    
     private Artifact artifact;
     protected FileSystem fileSystem;
 

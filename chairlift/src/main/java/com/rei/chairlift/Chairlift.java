@@ -31,7 +31,7 @@ public class Chairlift {
         return !filename.equals(TemplateConfig.CONFIG_GROOVY) && 
                !filename.equals(TemplateConfig.POSTINSTALL_GROOVY) &&
                !filename.endsWith(".class") &&
-               !p.toString().startsWith(TemplateConfig.SUBTEMPLATE_FOLDER);
+               !p.toString().startsWith(TemplateConfig.SUBTEMPLATE_PREFIX);
     };
     
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
@@ -49,14 +49,12 @@ public class Chairlift {
         TemplateArchive archive = new TemplateArchive(templateArtifact);
         TemplateConfig config = TemplateConfig.load(archive, subtemplate, globalConfig, projectDir);
         
-        String root = subtemplate == null ? "/" : TemplateConfig.SUBTEMPLATE_FOLDER + "/" + subtemplate;
+        archive.unpackTo(config.getBasePath(), projectDir, getCopyFilters(config), 
+                                                           getProcessFilters(config), 
+                                                           getRenameTransformer(config), 
+                                                           getTemplateProcessor(config));
         
-        archive.unpackTo(root, projectDir, getCopyFilters(config), 
-                                           getProcessFilters(config), 
-                                           getRenameTransformer(config), 
-                                           getTemplateProcessor(config));
-        
-        runPostInstallScript(projectDir, root, archive, config);
+        runPostInstallScript(projectDir, config.getBasePath(), archive, config);
         
         Path readme = projectDir.resolve("README.md");
         if (Files.exists(readme)) {

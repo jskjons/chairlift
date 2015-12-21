@@ -37,7 +37,7 @@ public class ChairliftTest extends BaseTemplateTest {
     public void canGenerateProject() throws Exception {
         Path projectFolder = tmp.newFolder("project").toPath();
         
-        String readme = chairlift.generate(getTestTemplateArtifact("simple-template"), projectFolder);
+        String readme = chairlift.generate(getTestTemplateArtifact(), projectFolder);
         
         printDir(projectFolder);
         
@@ -52,7 +52,7 @@ public class ChairliftTest extends BaseTemplateTest {
     public void canGenerateSubTemplate() throws Exception {
         Path projectFolder = tmp.newFolder("project").toPath();
         
-        chairlift.generate(getTestTemplateArtifact("template-with-subs"), "entity", projectFolder);
+        chairlift.generate(getTestTemplateArtifact(), "entity", projectFolder);
         
         printDir(projectFolder);
         

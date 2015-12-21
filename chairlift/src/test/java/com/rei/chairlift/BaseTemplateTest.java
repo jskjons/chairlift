@@ -6,7 +6,6 @@ import java.nio.file.Paths;
 
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
@@ -16,14 +15,15 @@ public class BaseTemplateTest {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();
 
-    public TemplateArchive getTestTemplate(String name) throws Exception {
-        Artifact artifact = getTestTemplateArtifact(name);
+    public TemplateArchive getTestTemplate() throws Exception {
+        Artifact artifact = getTestTemplateArtifact();
         TemplateArchive archive = new TemplateArchive(artifact);
         archive.init();
         return archive;
     }
 
-    public Artifact getTestTemplateArtifact(String name) throws Exception {
+    public Artifact getTestTemplateArtifact() throws Exception {
+        String name = "chairlift-test";
         Artifact artifact = new DefaultArtifact("com.rei.test", name, "zip", "1");
         Path templateZip = tmp.getRoot().toPath().resolve(name + ".zip");
         createTemplateZip(name, templateZip);
@@ -32,9 +32,8 @@ public class BaseTemplateTest {
     }
     
     public static void createTemplateZip(String testTemplateName, Path dest) throws Exception {
-        URL url = BaseTemplateTest.class.getClassLoader().getResource(testTemplateName + "/config.groovy");
-        Assert.assertNotNull("no template with name " + testTemplateName, url);
-        Path folder = Paths.get(url.toURI().resolve("."));
+        URL url = BaseTemplateTest.class.getClassLoader().getResource("template/config.groovy");
+        Path folder = Paths.get(url.toURI().resolve(".."));
         ZipUtils.create(folder, dest);
     }
 }

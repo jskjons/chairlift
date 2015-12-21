@@ -1,5 +1,7 @@
 package com.rei.chairlift;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,11 +15,12 @@ import com.rei.chairlift.util.GroovyScriptUtils;
 import groovy.lang.Binding;
 
 public class TemplateConfig {
-    public static final String SUBTEMPLATE_FOLDER = "/subtemplates/";
+    public static final String SUBTEMPLATE_PREFIX = "subtemplate-";
     public static final String CONFIG_GROOVY = "config.groovy";
     public static final String POSTINSTALL_GROOVY = "postinstall.groovy";
     public static final String DEFAULT_INCLUDES = "**/*";
     public static final String DEFAULT_PROCESSED = "**/*";
+    public static final String DEFAULT_TEMPLATE = "template";
 
     private ChairliftConfig globalConfig;
     
@@ -31,6 +34,7 @@ public class TemplateConfig {
     private List<String> unprocessedFiles = new ArrayList<>();
     
     private List<String> subtemplates = new ArrayList<>();
+    private String basePath;
     
     public TemplateConfig(ChairliftConfig globalConfig) {
         this.globalConfig = globalConfig;
@@ -77,20 +81,24 @@ public class TemplateConfig {
         return Collections.unmodifiableList(subtemplates);
     }
     
+    public String getBasePath() {
+        return basePath;
+    }
+
     @SuppressWarnings("unchecked")
     public static TemplateConfig load(TemplateArchive archive, String subtemplate, ChairliftConfig globalConfig, Path projectDir)
             throws IOException {
         TemplateConfig config = new TemplateConfig(globalConfig);
-        
-        if (subtemplate != null && !archive.exists(SUBTEMPLATE_FOLDER + subtemplate)) {
+        String basePath = "/" + (subtemplate != null ? SUBTEMPLATE_PREFIX + subtemplate : DEFAULT_TEMPLATE);
+
+        if (subtemplate != null && !archive.exists(SUBTEMPLATE_PREFIX + subtemplate)) {
             throw new IllegalArgumentException("no subtemplate with name " + subtemplate);
         }
         
         Binding binding = GroovyScriptUtils.getBinding(archive, globalConfig, projectDir);
         config.parameterValues.putAll(binding.getVariables());
         
-        String configFile = subtemplate != null ? SUBTEMPLATE_FOLDER + subtemplate + "/" + CONFIG_GROOVY : "/" + CONFIG_GROOVY;
-        GroovyScriptUtils.runScript(config, binding, archive.read(configFile).get());
+        GroovyScriptUtils.runScript(config, binding, archive.read(basePath + "/" + CONFIG_GROOVY).get());
 
         if (config.getIncludedFiles().isEmpty()) {
             config.getIncludedFiles().add(DEFAULT_INCLUDES);
@@ -98,8 +106,21 @@ public class TemplateConfig {
         
         if (config.getProcessedFiles().isEmpty()) {
             config.getProcessedFiles().add(DEFAULT_PROCESSED);
-        }        
+        }
+        
+        if (subtemplate == null) {
+            config.subtemplates = findSubtemplates(archive, config);
+        }
+        
+        config.basePath = basePath;
         
         return config;
+    }
+
+    private static List<String> findSubtemplates(TemplateArchive archive, TemplateConfig config) throws IOException {
+        return archive.list("/").stream()
+                .filter(s -> s.startsWith(SUBTEMPLATE_PREFIX))
+                .map(s -> s.replace(SUBTEMPLATE_PREFIX, ""))
+                .collect(toList());
     }
 }

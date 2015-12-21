@@ -13,7 +13,7 @@ public class TemplateConfigTest extends BaseTemplateTest {
 
     @Test
     public void testLoad() throws Exception {
-        TemplateArchive archive = getTestTemplate("simple-template");
+        TemplateArchive archive = getTestTemplate();
         ChairliftConfig globalConfig = new ChairliftConfig(false, ImmutableMap.of("global", "true", "includeFoo", "true"));
         
         TemplateConfig config = TemplateConfig.load(archive, null, globalConfig, tmp.getRoot().toPath());
