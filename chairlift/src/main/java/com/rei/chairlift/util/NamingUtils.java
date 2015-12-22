@@ -29,6 +29,10 @@ public class NamingUtils {
     }
     
     public static String toNatural(String input) {
+        return StringUtils.capitalize(toLowerDelimited(input, " "));
+    }
+    
+    public static String toTitleCase(String input) {
         return WordUtils.capitalizeFully(toLowerDelimited(input, " "));
     }
 }
