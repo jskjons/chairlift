@@ -12,17 +12,18 @@ public class ChairliftTemplateTest {
     
     @Test
     public void canGenerateTemplateAndSubTemplate() throws Exception {
-        tester.withParam("groupId", "com.rei.chairlift.testing")
+        tester.forTemplate().withParam("groupId", "com.rei.chairlift.testing")
               .generatesFile("src/main/resources/template/config.groovy")
               .generatesFile("src/main/resources/template/postinstall.groovy")
               .generatesFileWithContent("README.md", text -> text.contains("# Writing a Chairlift Template"))
               .runsMavenPackage()
-              .generateAndValidate()
-              .reset()
+              .generateAndValidate();
+        
+        tester.forSubTemplate("subtemplate")
               .withParam("name", "my-sub")
               .generatesFile("src/main/resources/subtemplate-my-sub/config.groovy")
               .generatesFile("src/main/resources/subtemplate-my-sub/postinstall.groovy")
-              .generateAndValidate("subtemplate");        
+              .generateAndValidate();        
     }
     
 }
