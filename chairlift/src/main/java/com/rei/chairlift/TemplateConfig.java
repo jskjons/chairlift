@@ -100,7 +100,7 @@ public class TemplateConfig {
         
         String configPath = basePath + "/" + CONFIG_GROOVY;
         try {
-            GroovyScriptUtils.runScript(config, binding, archive.read(configPath).get());
+            GroovyScriptUtils.runScript(config, binding, archive.getClasspath(), archive.read(configPath).get());
         } catch (Exception e) {
             throw new RuntimeException("error while running " + configPath, e);
         }

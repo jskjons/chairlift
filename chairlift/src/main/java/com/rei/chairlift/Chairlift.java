@@ -117,7 +117,8 @@ public class Chairlift {
             try {
                 logger.info("running {}", TemplateConfig.POSTINSTALL_GROOVY);
                 GroovyScriptUtils.runScript(config, 
-                                            GroovyScriptUtils.getBinding(archive, globalConfig, projectDir), 
+                                            GroovyScriptUtils.getBinding(archive, globalConfig, projectDir),
+                                            archive.getClasspath(),
                                             scriptText);
             } catch (Exception e) {
                 throw new RuntimeException(e);
