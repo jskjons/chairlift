@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.slf4j.Logger;
@@ -22,8 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import com.rei.chairlift.util.AntPathMatcher;
 import com.rei.chairlift.util.GroovyScriptUtils;
+import com.rei.chairlift.util.NamingUtils;
 
 import groovy.lang.GroovyRuntimeException;
+import groovy.lang.GroovyShell;
 import groovy.text.SimpleTemplateEngine;
 
 public class Chairlift {
@@ -33,8 +37,13 @@ public class Chairlift {
     private static final Logger logger = LoggerFactory.getLogger(Chairlift.class);
     
     private ChairliftConfig globalConfig;
-    private static final SimpleTemplateEngine TEMPLATE_ENGINE = new SimpleTemplateEngine();
+    private static final SimpleTemplateEngine TEMPLATE_ENGINE = createTemplateEngine();
+
+    
     private static final Predicate<Path> NEVER_COPY = p -> {
+        if (p.getFileName() == null) {
+            return true;
+        }
         String filename = p.getFileName().toString();
         return !filename.equals(TemplateConfig.CONFIG_GROOVY) && 
                !filename.equals(TemplateConfig.POSTINSTALL_GROOVY) &&
@@ -128,7 +137,10 @@ public class Chairlift {
 
     private Predicate<Path> anyMatch(List<String> patterns) {
         return path -> patterns.stream().anyMatch(pattern -> {
-            return PATH_MATCHER.match(pattern, toMatchPath(path));
+            String matchPath = toMatchPath(path);
+            boolean matched = PATH_MATCHER.match(pattern, matchPath);
+            logger.debug("pattern {} {} {}", pattern, matched ? "matched" : "did not match", matchPath);
+            return matched;
         });
     }
 
@@ -153,4 +165,12 @@ public class Chairlift {
             }
         }).collect(toList());
     }
+    
+    private static SimpleTemplateEngine createTemplateEngine() {
+        CompilerConfiguration compilerConfig = new CompilerConfiguration().addCompilationCustomizers(
+                new ImportCustomizer().addStaticStars(NamingUtils.class.getName()));
+        
+        return new SimpleTemplateEngine(new GroovyShell(compilerConfig));
+    }
+
 }

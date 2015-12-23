@@ -31,6 +31,13 @@ public class ChairliftTest extends BaseTemplateTest {
         assertTrue(allMatch(chairlift.getCopyFilters(config), Paths.get("/README.md")));
         assertTrue(allMatch(chairlift.getCopyFilters(config), Paths.get("/foo/bar")));
         assertFalse(allMatch(chairlift.getCopyFilters(config), Paths.get("/foo/exclude")));
+        
+        config.getProcessedFiles().add("**/*");
+        config.getUnprocessedFiles().add("some-folder/BLAH");
+        
+        assertTrue(allMatch(chairlift.getProcessFilters(config), Paths.get("/README.md")));
+        assertTrue(allMatch(chairlift.getProcessFilters(config), Paths.get("/foo/bar")));
+        assertFalse(allMatch(chairlift.getProcessFilters(config), Paths.get("/some-folder/BLAH")));
     }
     
     @Test

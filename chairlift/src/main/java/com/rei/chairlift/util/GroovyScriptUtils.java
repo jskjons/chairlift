@@ -32,9 +32,7 @@ public class GroovyScriptUtils {
             compilerConfig.setClasspathList(classpath.stream().map(URL::toString).collect(toList()));
         }
         
-        ImportCustomizer imports = new ImportCustomizer();
-        imports.addStaticStars(NamingUtils.class.getName());
-        compilerConfig.addCompilationCustomizers(imports);
+        compilerConfig.addCompilationCustomizers(new ImportCustomizer().addStaticStars(NamingUtils.class.getName()));
         compilerConfig.setScriptBaseClass(ChairliftScript.class.getName());
         return compilerConfig;
     }

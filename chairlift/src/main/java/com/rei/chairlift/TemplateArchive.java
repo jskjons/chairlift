@@ -119,7 +119,7 @@ public class TemplateArchive implements AutoCloseable {
                 if (allMatch(copyFilters, root.relativize(file))) {
                     byte[] content = Files.readAllBytes(file);
                     try {
-                        content = allMatch(processingFilters, file) ? transform(contentTransformer, content) : content;
+                        content = allMatch(processingFilters, root.relativize(file)) ? transform(contentTransformer, content) : content;
                     } catch (TemplatingException e) {
                         throw new RuntimeException("error parsing template " + file + ": " + e.getCause().getMessage(), e);
                     }
@@ -143,9 +143,11 @@ public class TemplateArchive implements AutoCloseable {
 
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                Path rawDest = Paths.get(projectDir.toString(), root.relativize(dir).toString());
-                Path dest = filenameTransformer.apply(rawDest);
-                Files.createDirectories(dest);
+                if (allMatch(copyFilters, root.relativize(dir))) {
+                    Path rawDest = Paths.get(projectDir.toString(), root.relativize(dir).toString());
+                    Path dest = filenameTransformer.apply(rawDest);
+                    Files.createDirectories(dest);
+                }
                 return FileVisitResult.CONTINUE;
             }
         });

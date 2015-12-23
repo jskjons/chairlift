@@ -1,9 +1,8 @@
 package com.rei.chairlift;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Map;
-
-import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
 
 import groovy.lang.Script;
 
@@ -44,8 +43,18 @@ public class ChairliftScript extends Script {
     
     private Object getParamValue(String name, String description, Object defaultValue) {
         if (config.getGlobalConfig().getSuppliedParameters().containsKey(name)) {
-            return DefaultTypeTransformation.castToType(config.getGlobalConfig().getSuppliedParameters().get(name), 
-                                                        defaultValue.getClass());
+            String value = config.getGlobalConfig().getSuppliedParameters().get(name);
+            
+            Class<? extends Object> paramType = defaultValue.getClass();
+            if (paramType.equals(Boolean.TYPE) || paramType.equals(Boolean.class)) {
+                return value.equalsIgnoreCase("y") || value.equalsIgnoreCase("true");
+            }
+            
+            if (defaultValue instanceof Number) {
+                return new BigDecimal(value);
+            }
+            
+            return value;
         }
         
         if (config.getGlobalConfig().isInteractive()) {
