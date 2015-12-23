@@ -52,6 +52,18 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>io.github.jeffskj.cdversions</groupId>
+				<artifactId>cd-versions-maven-plugin</artifactId>
+				<version>0.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate-release-pom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>
