@@ -33,7 +33,7 @@ public class TemplateArchive implements AutoCloseable {
     private final List<URL> classpath;
 
     public TemplateArchive(Artifact artifact) {
-        this(artifact, null);
+        this(artifact, Collections.emptyList());
     }
     
     public TemplateArchive(Artifact artifact, List<URL> classpath) {
@@ -96,7 +96,7 @@ public class TemplateArchive implements AutoCloseable {
     }
 
     public List<URL> getClasspath() {
-        return this.classpath;
+        return classpath;
     }
     
     public void unpackTo(String base, Path projectDir, 
