@@ -4,4 +4,34 @@
 	<groupId>${groupId}</groupId>
 	<artifactId>${artifactId}</artifactId>
 	<version>\${revision}</version>
+
+	<properties>
+		<revision>99999-SNAPSHOT</revision>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.rei.chairlift</groupId>
+			<artifactId>chairlift-testing</artifactId>
+			<version>${templateVersion}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>io.github.jeffskj.cdversions</groupId>
+				<artifactId>cd-versions-maven-plugin</artifactId>
+				<version>0.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate-release-pom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

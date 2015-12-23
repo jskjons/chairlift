@@ -8,14 +8,14 @@ import com.rei.chairlift.testing.TemplateTester;
 public class ChairliftTemplateTest {
 
     @Rule
-    public TemplateTester tester = TemplateTester.forCurrentProject();
+    public TemplateTester tester = TemplateTester.forCurrentProject().deleteOnFailure(false);
     
     @Test
     public void canGenerateTemplateAndSubTemplate() throws Exception {
         tester.forTemplate().withParam("groupId", "com.rei.chairlift.testing")
               .generatesFile("src/main/resources/template/config.groovy")
               .generatesFile("src/main/resources/template/postinstall.groovy")
-              .generatesFileWithContent("README.md", text -> text.contains("# Writing a Chairlift Template"))
+              .generatesFileContaining("README.md", "# Writing a Chairlift Template")
               .runsMavenPackage()
               .generateAndValidate();
         
