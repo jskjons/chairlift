@@ -34,8 +34,6 @@ public class TemplateTester extends ExternalResource {
     private Path srcFolder;
     private Path tmp;
     private Path destFolder;
-    private String groupId;
-    private String version;
     private boolean deleteOnFail = true;
     private boolean failed = false;
     
@@ -74,16 +72,6 @@ public class TemplateTester extends ExternalResource {
     
     public TemplateTester deleteOnFailure(boolean deleteOnFail) {
         this.deleteOnFail = deleteOnFail;
-        return this;
-    }
-    
-    public TemplateTester useGroupId(String groupId) {
-        this.groupId = groupId;
-        return this;
-    }
-
-    public TemplateTester useVersion(String version) {
-        this.version = version;
         return this;
     }
 
@@ -172,10 +160,7 @@ public class TemplateTester extends ExternalResource {
         private void doGenerateAndValidate() throws Exception {
             MavenXpp3Reader reader = new MavenXpp3Reader();
             Model model = reader.read(Files.newBufferedReader(srcFolder.resolve(RELATIVE_POM_LOCATION)));
-            Artifact artifact = new DefaultArtifact(groupId != null ? groupId : model.getGroupId(), 
-                                                    model.getArtifactId(), 
-                                                    model.getPackaging(), 
-                                                    version != null ? version : model.getVersion());
+            Artifact artifact = new DefaultArtifact(getGroupId(model), model.getArtifactId(), model.getPackaging(), getVersion(model));
             
             Path templateJar = tmp.resolve("template.jar");
             ZipUtils.create(srcFolder, templateJar);
@@ -203,6 +188,18 @@ public class TemplateTester extends ExternalResource {
                 int returnCode = cli.doMain(goals, destFolder.toAbsolutePath().toString(), System.out, System.out);
                 Assert.assertEquals("maven command failed!", 0, returnCode);
             }            
+        }
+
+        private String getGroupId(Model model) {
+            return model.getGroupId() != null ? model.getGroupId() : model.getParent().getGroupId();
+        }
+
+        private String getVersion(Model model) {
+            String version = model.getVersion() != null ? model.getVersion() : model.getParent().getVersion();
+            for (Object name : model.getProperties().keySet()) {
+                version = version.replace("${" + name + "}", model.getProperties().getProperty(name.toString()));
+            }
+            return version;
         }
     }
     
