@@ -9,11 +9,14 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.apache.maven.cli.MavenCli;
 import org.apache.maven.model.Model;
@@ -36,6 +39,7 @@ public class TemplateTester extends ExternalResource {
     private Path destFolder;
     private boolean deleteOnFail = true;
     private boolean failed = false;
+    private boolean offline = true;
     
     private TemplateTester(Path folder) throws IOException {
         srcFolder = folder;
@@ -70,6 +74,11 @@ public class TemplateTester extends ExternalResource {
         }
     }
     
+    public TemplateTester offline(boolean offline) {
+        this.offline = offline;
+        return this;
+    }
+    
     public TemplateTester deleteOnFailure(boolean deleteOnFail) {
         this.deleteOnFail = deleteOnFail;
         return this;
@@ -92,7 +101,7 @@ public class TemplateTester extends ExternalResource {
     
     public class TestScenario {
         private Map<String, String> params = new LinkedHashMap<>();
-        private String[] goals;
+        private List<String> goals = new ArrayList<>();
         private Map<String, Validation> validations = new LinkedHashMap<>();
         private List<String> doesntGenerate = new LinkedList<>();
         private String subtemplate;
@@ -108,12 +117,12 @@ public class TemplateTester extends ExternalResource {
         }    
         
         public TestScenario runsMavenGoals(String... goals) {
-            this.goals = goals;
+            this.goals.addAll(Arrays.asList(goals));
             return this;
         }    
         
         public TestScenario runsMavenPackage() {
-            goals = new String[] {"package"};
+            goals.add("package");
             return this;
         }    
         
@@ -122,8 +131,18 @@ public class TemplateTester extends ExternalResource {
             return this;
         }
         
+        public TestScenario generatesFileNotContaining(String path, String... substrings) {
+            Stream.of(substrings).forEach(s -> generatesFileNotContaining(path, s));
+            return this;
+        }
+        
         public TestScenario generatesFileNotContaining(String path, String contentSubStr) {
             return generatesFileWithContent(path, "shouldn't contain " + contentSubStr, s -> !s.contains(contentSubStr)); 
+        }
+        
+        public TestScenario generatesFileContaining(String path, String... substrings) {
+            Stream.of(substrings).forEach(s -> generatesFileContaining(path, s));
+            return this;
         }
         
         public TestScenario generatesFileContaining(String path, String contentSubStr) {
@@ -182,10 +201,13 @@ public class TemplateTester extends ExternalResource {
             doesntGenerate.forEach(path -> 
                 Assert.assertFalse("expected " + path + " NOT to exist!", Files.exists(destFolder.resolve(path))));
             
-            if (goals != null && goals.length > 0) {
+            if (!goals.isEmpty()) {
                 System.setProperty(MavenCli.MULTIMODULE_PROJECT_DIRECTORY, destFolder.toAbsolutePath().toString());
                 MavenCli cli = new MavenCli();
-                int returnCode = cli.doMain(goals, destFolder.toAbsolutePath().toString(), System.out, System.out);
+                if (offline) {
+                    goals.add(0, "-o");
+                }
+                int returnCode = cli.doMain(goals.toArray(new String[0]), destFolder.toAbsolutePath().toString(), System.out, System.out);
                 Assert.assertEquals("maven command failed!", 0, returnCode);
             }            
         }
