@@ -22,6 +22,7 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.rei.aether.Aether;
 import com.rei.chairlift.util.AntPathMatcher;
 import com.rei.chairlift.util.GroovyScriptUtils;
 import com.rei.chairlift.util.NamingUtils;
@@ -32,12 +33,14 @@ import groovy.text.SimpleTemplateEngine;
 
 public class Chairlift {
     
+
     private static final String TEMPLATE_ERROR_MESSAGE = "error processing template!";
 
     private static final Logger logger = LoggerFactory.getLogger(Chairlift.class);
     
     private ChairliftConfig globalConfig;
     private static final SimpleTemplateEngine TEMPLATE_ENGINE = createTemplateEngine();
+    private static final Aether AETHER = Aether.fromMavenSettings();
 
     
     private static final Predicate<Path> NEVER_COPY = p -> {
@@ -53,8 +56,6 @@ public class Chairlift {
     
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
-    private DependencyResolver dependencyResolver = new DependencyResolver();
-    
     public Chairlift(ChairliftConfig globalConfig) {
         this.globalConfig = globalConfig;
     }
@@ -64,7 +65,7 @@ public class Chairlift {
     }
     
     public String generate(String gavSpec, String subtemplate, Path projectDir) throws IOException, ArtifactResolutionException {
-        return generate(dependencyResolver.resolveSingleArtifact(gavSpec), subtemplate, projectDir);
+        return generate(AETHER.resolveSingleArtifact(gavSpec), subtemplate, projectDir);
     }
     
     public String generate(Artifact templateArtifact, Path projectDir) throws IOException {
@@ -157,7 +158,7 @@ public class Chairlift {
             return Collections.emptyList();
         }
         
-        return dependencyResolver.resolveDependencies(artifact).stream().map(a -> {
+        return AETHER.resolveDependencies(artifact).stream().map(a -> {
             try {
                 return a.getFile().toURI().toURL();
             } catch (MalformedURLException e) {
