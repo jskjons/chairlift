@@ -20,7 +20,7 @@ import groovy.lang.GroovyShell;
 
 public class GroovyScriptUtils {
     public static void runScript(TemplateConfig config, Binding binding, List<URL> classpath, String scriptText) throws IOException {
-        GroovyShell shell = new GroovyShell(GroovyScriptUtils.class.getClassLoader(), binding, GroovyScriptUtils.getCompilerConfig(classpath));
+        GroovyShell shell = new GroovyShell(GroovyScriptUtils.class.getClassLoader(), binding, getCompilerConfig(classpath));
         ChairliftScript script = (ChairliftScript) shell.parse(scriptText);
         script.setConfig(config);
         script.run();

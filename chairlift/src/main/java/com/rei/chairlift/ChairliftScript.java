@@ -44,23 +44,26 @@ public class ChairliftScript extends Script {
     private Object getParamValue(String name, String description, Object defaultValue) {
         if (config.getGlobalConfig().getSuppliedParameters().containsKey(name)) {
             String value = config.getGlobalConfig().getSuppliedParameters().get(name);
-            
-            Class<? extends Object> paramType = defaultValue.getClass();
-            if (paramType.equals(Boolean.TYPE) || paramType.equals(Boolean.class)) {
-                return value.equalsIgnoreCase("y") || value.equalsIgnoreCase("true");
-            }
-            
-            if (defaultValue instanceof Number) {
-                return new BigDecimal(value);
-            }
-            
-            return value;
+            return convert(defaultValue, value);
         }
         
         if (config.getGlobalConfig().isInteractive()) {
-            return System.console().readLine("value for '%s' (%s) [%s]: ", name, description, defaultValue);
+            return convert(defaultValue, System.console().readLine("value for '%s' (%s) [%s]: ", name, description, defaultValue));
         }
         return defaultValue;
+    }
+
+    private Object convert(Object defaultValue, String value) {
+        Class<? extends Object> paramType = defaultValue.getClass();
+        if (paramType.equals(Boolean.TYPE) || paramType.equals(Boolean.class)) {
+            return value.equalsIgnoreCase("y") || value.equalsIgnoreCase("true");
+        }
+        
+        if (defaultValue instanceof Number) {
+            return new BigDecimal(value);
+        }
+        
+        return value;
     }
 
     @Override
